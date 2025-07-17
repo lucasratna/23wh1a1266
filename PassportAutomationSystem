@@ -1,0 +1,253 @@
+import java.io.*;
+import java.util.*;
+import java.util.regex.Pattern;
+
+public class PassportAutomationSystem {
+
+    static class User implements Serializable {
+        String username, password, name, phone, status = "Not Applied";
+
+        User(String username, String password, String name, String phone) {
+            this.username = username;
+            this.password = password;
+            this.name = name;
+            this.phone = phone;
+        }
+    }
+
+    static Scanner sc = new Scanner(System.in);
+    static List<User> users = new ArrayList<>();
+    static final String ADMIN_USER = "admin";
+    static final String ADMIN_PASS = "admin123";
+    static final String POLICE_USER = "police";
+    static final String POLICE_PASS = "police123";
+    static final String FILE_PATH = "users.dat";
+
+    public static void main(String[] args) {
+        loadUsersFromFile();
+
+        while (true) {
+            System.out.println("\n=== Passport Automation System ===");
+            System.out.println("1. Register");
+            System.out.println("2. User Login");
+            System.out.println("3. Police Login");
+            System.out.println("4. Admin Login");
+            System.out.println("5. Exit");
+            System.out.print("Enter your choice: ");
+            String choice = sc.nextLine();
+
+            switch (choice) {
+                case "1" -> registerUser();
+                case "2" -> userLogin();
+                case "3" -> policeLogin();
+                case "4" -> adminLogin();
+                case "5" -> {
+                    saveUsersToFile();
+                    System.out.println("✅ Exiting... Thank you!");
+                    return;
+                }
+                default -> System.out.println("❌ Invalid choice.");
+            }
+        }
+    }
+
+    static void registerUser() {
+        System.out.print("Full Name: ");
+        String name = sc.nextLine();
+        System.out.print("Username: ");
+        String username = sc.nextLine();
+        System.out.print("Password: ");
+        String password = sc.nextLine();
+
+        String phone;
+        while (true) {
+            System.out.print("Phone Number (10 digits): ");
+            phone = sc.nextLine();
+            if (Pattern.matches("\\d{10}", phone)) break;
+            else System.out.println("❌ Invalid phone number. Try again.");
+        }
+
+        users.add(new User(username, password, name, phone));
+        saveUsersToFile();
+        System.out.println("✅ Registration successful.");
+    }
+
+    static void userLogin() {
+        System.out.print("Username: ");
+        String uname = sc.nextLine();
+        System.out.print("Password: ");
+        String pass = sc.nextLine();
+
+        for (User u : users) {
+            if (u.username.equals(uname) && u.password.equals(pass)) {
+                userMenu(u);
+                return;
+            }
+        }
+        System.out.println("❌ Invalid credentials.");
+    }
+
+    static void userMenu(User u) {
+        while (true) {
+            System.out.println("\nWelcome, " + u.name);
+            System.out.println("1. Apply for Passport");
+            System.out.println("2. Check Application Status");
+            System.out.println("3. Logout");
+            System.out.print("Enter choice: ");
+            String ch = sc.nextLine();
+
+            switch (ch) {
+                case "1" -> {
+                    if (u.status.equals("Not Applied")) {
+                        u.status = "Submitted";
+                        saveUsersToFile();
+                        System.out.println("✅ Application submitted.");
+                    } else {
+                        System.out.println("⚠️ Already applied. Status: " + u.status);
+                    }
+                }
+                case "2" -> System.out.println("📄 Current status: " + u.status);
+                case "3" -> {
+                    System.out.println("👋 Logged out.");
+                    return;
+                }
+                default -> System.out.println("❌ Invalid choice.");
+            }
+        }
+    }
+
+    static void policeLogin() {
+        System.out.print("Police Username: ");
+        String uname = sc.nextLine();
+        System.out.print("Police Password: ");
+        String pass = sc.nextLine();
+
+        if (uname.equals(POLICE_USER) && pass.equals(POLICE_PASS)) {
+            policeMenu();
+        } else {
+            System.out.println("❌ Wrong police credentials.");
+        }
+    }
+
+    static void policeMenu() {
+        while (true) {
+            System.out.println("\n--- Police Panel ---");
+            System.out.println("1. View Submitted Applications");
+            System.out.println("2. Verify Application");
+            System.out.println("3. Logout");
+            System.out.print("Enter your choice: ");
+            String ch = sc.nextLine();
+
+            switch (ch) {
+                case "1" -> {
+                    for (User u : users) {
+                        if (u.status.equals("Submitted")) {
+                            System.out.println(u.username + " - " + u.name + " [" + u.status + "]");
+                        }
+                    }
+                }
+                case "2" -> {
+                    System.out.print("Enter username to verify: ");
+                    String uname = sc.nextLine();
+                    boolean found = false;
+                    for (User u : users) {
+                        if (u.username.equals(uname) && u.status.equals("Submitted")) {
+                            u.status = "Police Verified";
+                            saveUsersToFile();
+                            System.out.println("✅ Verified " + u.name);
+                            found = true;
+                        }
+                    }
+                    if (!found) System.out.println("❌ Not found or not submitted.");
+                }
+                case "3" -> {
+                    System.out.println("👮 Police logged out.");
+                    return;
+                }
+                default -> System.out.println("❌ Invalid choice.");
+            }
+        }
+    }
+
+    static void adminLogin() {
+        System.out.print("Admin Username: ");
+        String uname = sc.nextLine();
+        System.out.print("Admin Password: ");
+        String pass = sc.nextLine();
+
+        if (uname.equals(ADMIN_USER) && pass.equals(ADMIN_PASS)) {
+            adminMenu();
+        } else {
+            System.out.println("❌ Wrong admin credentials.");
+        }
+    }
+
+    static void adminMenu() {
+        while (true) {
+            System.out.println("\n--- Admin Panel ---");
+            System.out.println("1. View All Applications");
+            System.out.println("2. Approve Verified Applications");
+            System.out.println("3. Logout");
+            System.out.print("Enter choice: ");
+            String ch = sc.nextLine();
+
+            switch (ch) {
+                case "1" -> {
+                    for (User u : users) {
+                        System.out.println(u.username + " - " + u.name + " [" + u.status + "]");
+                    }
+                }
+                case "2" -> {
+                    boolean approved = false;
+                    for (User u : users) {
+                        if (u.status.equals("Police Verified")) {
+                            u.status = "Approved";
+                            approved = true;
+                            printReceipt(u);
+                        }
+                    }
+                    if (approved) {
+                        saveUsersToFile();
+                        System.out.println("✅ Approved all verified applications.");
+                    } else {
+                        System.out.println("⚠️ No applications to approve.");
+                    }
+                }
+                case "3" -> {
+                    System.out.println("👨‍💼 Admin logged out.");
+                    return;
+                }
+                default -> System.out.println("❌ Invalid choice.");
+            }
+        }
+    }
+
+    static void printReceipt(User u) {
+        System.out.println("\n--- Passport Application Receipt ---");
+        System.out.println("Name     : " + u.name);
+        System.out.println("Username : " + u.username);
+        System.out.println("Phone    : " + u.phone);
+        System.out.println("Status   : " + u.status);
+        System.out.println("Issued   : " + new Date());
+        System.out.println("-------------------------------------");
+    }
+
+    static void saveUsersToFile() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_PATH))) {
+            oos.writeObject(users);
+        } catch (IOException e) {
+            System.out.println("❌ Failed to save users: " + e.getMessage());
+        }
+    }
+
+    static void loadUsersFromFile() {
+        File file = new File(FILE_PATH);
+        if (file.exists()) {
+            try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+                users = (List<User>) ois.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+                System.out.println("❌ Failed to load users: " + e.getMessage());
+            }
+        }
+    }
+}
